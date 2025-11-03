@@ -134,6 +134,10 @@ if [ -z "${DB_TABLES}" ]; then
   DB_TABLES=FALSE
 fi
 
+if [ -z "${HEALTHCHECKS_URL}" ]; then
+  HEALTHCHECKS_URL=
+fi
+
 file_env 'DB_DUMP_ENCRYPTION_PASS_PHRASE'
 if [ -z "${DB_DUMP_ENCRYPTION_PASS_PHRASE}" ]; then
   STRING_LENGTH=30
@@ -216,6 +220,7 @@ DB_DUMP_ENCRYPTION="${DB_DUMP_ENCRYPTION}"
 export PG_CONN_PARAMETERS=\"${PG_CONN_PARAMETERS}\"
 export DBLIST=\"${DBLIST}\"
 export DB_TABLES=\"${DB_TABLES}\"
+export HEALTHCHECKS_URL=\"${HEALTHCHECKS_URL}\"
  " > /backup-scripts/pgenv.sh
 
 echo "Start script running with these environment options"

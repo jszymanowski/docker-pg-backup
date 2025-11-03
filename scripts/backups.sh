@@ -200,3 +200,13 @@ if [ "${REMOVE_BEFORE:-}" ]; then
     clean_s3bucket "${BUCKET}" "${REMOVE_BEFORE} days"
   fi
 fi
+
+# Call healthchecks webhook if configured
+if [ -n "${HEALTHCHECKS_URL:-}" ]; then
+  echo "Calling healthchecks webhook at $(date)" >> ${CONSOLE_LOGGING_OUTPUT}
+  if curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}" > /dev/null 2>&1; then
+    echo "Healthchecks webhook called successfully" >> ${CONSOLE_LOGGING_OUTPUT}
+  else
+    echo "Failed to call healthchecks webhook" >> ${CONSOLE_LOGGING_OUTPUT}
+  fi
+fi

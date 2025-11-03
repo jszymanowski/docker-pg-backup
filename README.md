@@ -93,10 +93,12 @@ choose `20`, we will at least keep 20 backups even if they are older than `REMOV
   be `FILE` or `S3`(Example minio or amazon bucket) backends. 
 * `DB_TABLES` A boolean variable to specify if the user wants to dump the DB as individual tables. 
   Defaults to `No`
-* `CRON_SCHEDULE` specifies the cron schedule when the backup needs to run. Defaults to 
+* `CRON_SCHEDULE` specifies the cron schedule when the backup needs to run. Defaults to
 midnight daily.
 * `DB_DUMP_ENCRYPTION` boolean value specifying if you need the backups to be encrypted.
 * `RUN_ONCE` useful to run the container as a once off job and exit. Useful in Kubernetes context
+* `HEALTHCHECKS_URL` optional URL to call when backup completes successfully. Useful for monitoring
+backup health with services like healthchecks.io. Example: `https://hc-ping.com/your-uuid`
 
 **Note** To avoid interpolation issues with the env variable `${CRON_SCHEDULE}` you will
 need to provide the variable as a quoted string i.e ${CRON_SCHEDULE}='*/1 * * * *' 

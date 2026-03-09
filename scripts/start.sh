@@ -52,6 +52,10 @@ if [ -z "${BUCKET}" ]; then
 	BUCKET=backups
 fi
 
+if [ -z "${BUCKET_PATH}" ]; then
+	BUCKET_PATH=
+fi
+
 file_env 'HOST_BASE'
 if [ -z "${HOST_BASE}" ]; then
 	HOST_BASE=
@@ -201,6 +205,7 @@ export ACCESS_KEY_ID=\"${ACCESS_KEY_ID}\"
 export SECRET_ACCESS_KEY=\"${SECRET_ACCESS_KEY}\"
 export DEFAULT_REGION=\"${DEFAULT_REGION}\"
 export BUCKET=\"${BUCKET}\"
+export BUCKET_PATH=\"${BUCKET_PATH}\"
 export HOST_BASE=\"${HOST_BASE}\"
 export HOST_BUCKET=\"${HOST_BUCKET}\"
 export SSL_SECURE=\"${SSL_SECURE}\"

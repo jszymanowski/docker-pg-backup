@@ -142,6 +142,9 @@ The script uses [s3cmd](https://s3tools.org/s3cmd) for backing up files to S3 bu
 * `HOST_BUCKET` 
 * `SSL_SECURE` The determines if the S3 bucket is 
 * `BUCKET` Indicates the bucket name that will be created.
+* `BUCKET_PATH` Optional path prefix within the bucket. For example, setting
+  `BUCKET=my-bucket` and `BUCKET_PATH=project/backups` will store backups under
+  `s3://my-bucket/project/backups/`.
 
 You can read more about configuration options for [s3cmd](https://s3tools.org/s3cmd-howto)
 

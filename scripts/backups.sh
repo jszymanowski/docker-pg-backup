@@ -14,7 +14,7 @@ fi
 MYBASEDIR=/${S3_DEST}
 MYBACKUPDIR=${MYBASEDIR}/${YEAR}/${MONTH}
 mkdir -p ${MYBACKUPDIR}
-pushd ${MYBACKUPDIR} || exit
+pushd ${MYBACKUPDIR} > /dev/null || exit
 
 function s3_config() {
   # If it doesn't exists, copy from ${EXTRA_CONF_DIR} directory if exists

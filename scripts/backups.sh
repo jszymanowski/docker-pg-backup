@@ -2,6 +2,8 @@
 
 source /backup-scripts/pgenv.sh
 
+BACKUP_SUCCESS=true
+
 # Env variables
 MYDATE=$(date +%d-%B-%Y)
 MONTH=$(date +%B)
@@ -120,12 +122,14 @@ function backup_db() {
       if [[ "${DB_DUMP_ENCRYPTION}" =~ [Tt][Rr][Uu][Ee] ]]; then
         if ! ( set -o pipefail && pg_dump ${PG_CONN_PARAMETERS} ${DUMP_ARGS} -d "${DB}" | openssl enc -aes-256-cbc -pass pass:"${DB_DUMP_ENCRYPTION_PASS_PHRASE}" -pbkdf2 -iter 10000 -md sha256 -out "${FILENAME}" ); then
           echo -e "\e[1;31mFailed to back up ${DB} at $(date)\033[0m" >> ${CONSOLE_LOGGING_OUTPUT}
+          BACKUP_SUCCESS=false
           rm ${FILENAME}
           continue
         fi
       else
         if ! pg_dump ${PG_CONN_PARAMETERS} ${DUMP_ARGS} -d ${DB} > ${FILENAME}; then
           echo -e "\e[1;31mFailed to back up ${DB} at $(date)\033[0m" >> ${CONSOLE_LOGGING_OUTPUT}
+          BACKUP_SUCCESS=false
           rm ${FILENAME}
           continue
         fi
@@ -180,17 +184,29 @@ if [[ ${STORAGE_BACKEND} == "S3" ]]; then
      echo "Bucket '${BUCKET}' exists."
   else
      echo "Bucket '${BUCKET}' does not exist. Creating..."
-     s3cmd mb "s3://${BUCKET}"
+     if ! s3cmd mb "s3://${BUCKET}"; then
+       echo -e "\e[1;31mFailed to create bucket '${BUCKET}'\033[0m" >> ${CONSOLE_LOGGING_OUTPUT}
+       BACKUP_SUCCESS=false
+     fi
   fi
 
-  # Backup globals Always get the latest
-  PGPASSWORD=${POSTGRES_PASS} pg_dumpall ${PG_CONN_PARAMETERS}  --globals-only | s3cmd put - s3://${S3_DEST}/globals.sql
-  echo "Sync globals.sql to s3://${S3_DEST}/  " >> ${CONSOLE_LOGGING_OUTPUT}
-  backup_db "s3cmd sync -r ${MYBASEDIR}/* s3://${S3_DEST}/"
+  if [[ "${BACKUP_SUCCESS}" == "true" ]]; then
+    # Backup globals Always get the latest
+    if ! (set -o pipefail && PGPASSWORD=${POSTGRES_PASS} pg_dumpall ${PG_CONN_PARAMETERS}  --globals-only | s3cmd put - s3://${S3_DEST}/globals.sql); then
+      echo -e "\e[1;31mFailed to backup globals to S3\033[0m" >> ${CONSOLE_LOGGING_OUTPUT}
+      BACKUP_SUCCESS=false
+    else
+      echo "Sync globals.sql to s3://${S3_DEST}/  " >> ${CONSOLE_LOGGING_OUTPUT}
+    fi
+    backup_db "s3cmd sync -r ${MYBASEDIR}/* s3://${S3_DEST}/"
+  fi
 
 elif [[ ${STORAGE_BACKEND} =~ [Ff][Ii][Ll][Ee] ]]; then
   # Backup globals Always get the latest
-  PGPASSWORD=${POSTGRES_PASS} pg_dumpall ${PG_CONN_PARAMETERS}  --globals-only -f ${MYBASEDIR}/globals.sql
+  if ! PGPASSWORD=${POSTGRES_PASS} pg_dumpall ${PG_CONN_PARAMETERS}  --globals-only -f ${MYBASEDIR}/globals.sql; then
+    echo -e "\e[1;31mFailed to backup globals\033[0m" >> ${CONSOLE_LOGGING_OUTPUT}
+    BACKUP_SUCCESS=false
+  fi
   # Loop through each pg database backing it up
   backup_db ""
 
@@ -208,10 +224,16 @@ fi
 
 # Call healthchecks webhook if configured
 if [ -n "${HEALTHCHECKS_URL:-}" ]; then
-  echo "Calling healthchecks webhook at $(date)" >> ${CONSOLE_LOGGING_OUTPUT}
-  if curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}" > /dev/null 2>&1; then
-    echo "Healthchecks webhook called successfully" >> ${CONSOLE_LOGGING_OUTPUT}
+  if [[ "${BACKUP_SUCCESS}" == "true" ]]; then
+    echo "Calling healthchecks webhook at $(date)" >> ${CONSOLE_LOGGING_OUTPUT}
+    if curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}" > /dev/null 2>&1; then
+      echo "Healthchecks webhook called successfully" >> ${CONSOLE_LOGGING_OUTPUT}
+    else
+      echo "Failed to call healthchecks webhook" >> ${CONSOLE_LOGGING_OUTPUT}
+    fi
   else
-    echo "Failed to call healthchecks webhook" >> ${CONSOLE_LOGGING_OUTPUT}
+    echo "Backup failed, skipping healthchecks webhook" >> ${CONSOLE_LOGGING_OUTPUT}
+    # Signal failure to healthchecks if the service supports it
+    curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}/fail" > /dev/null 2>&1 || true
   fi
 fi

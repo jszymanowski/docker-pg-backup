@@ -32,8 +32,14 @@ if [ -z "${YEAR:-}" ]; then
   export YEAR="$(date +%Y)"
 fi
 
+if [ -n "${BUCKET_PATH:-}" ]; then
+  export S3_DEST="${BUCKET:-backups}/${BUCKET_PATH}"
+else
+  export S3_DEST="${BUCKET:-backups}"
+fi
+
 if [ -z "${MYBASEDIR:-}" ]; then
-  export MYBASEDIR="/${BUCKET:-backups}"
+  export MYBASEDIR="/${S3_DEST}"
 fi
 
 if [ -z "${MYBACKUPDIR:-}" ]; then

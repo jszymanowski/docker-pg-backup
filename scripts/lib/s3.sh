@@ -52,22 +52,22 @@ s3_upload() {
 
   # Normalize path → S3 key
   local path="${gz_file#/}"
-  local gz_key="${path#${BUCKET}/}"
+  local gz_key="${path#${S3_DEST}/}"
   local checksum_file="${gz_file}.sha256"
   local checksum_key="${gz_key}.sha256"
   local metadata_file="${gz_file}.meta.json"
   local metadata_key="${gz_key}.meta.json"
 
-  s3_log "Uploading $(basename "${gz_file}") to s3://${BUCKET}/${gz_key}"
+  s3_log "Uploading $(basename "${gz_file}") to s3://${S3_DEST}/${gz_key}"
 
   # Upload gzip
-  if ! retry 3 s3cmd put "${gz_file}" "s3://${BUCKET}/${gz_key}"; then
+  if ! retry 3 s3cmd put "${gz_file}" "s3://${S3_DEST}/${gz_key}"; then
     s3_log "ERROR: Failed to upload ${gz_file}"
     return 1
   fi
 
    # Upload metadata file
-  if ! retry 3 s3cmd put "${metadata_file}" "s3://${BUCKET}/${metadata_key}"; then
+  if ! retry 3 s3cmd put "${metadata_file}" "s3://${S3_DEST}/${metadata_key}"; then
     s3_log "ERROR: Failed to upload ${metadata_file}"
     return 1
   fi
@@ -76,7 +76,7 @@ s3_upload() {
   if [[ "${CHECKSUM_VALIDATION}" =~ ^([Tt][Rr][Uu][Ee])$ ]] && [[ -f "${checksum_file}" ]]; then
     s3_log "Uploading checksum $(basename "${checksum_file}")"
 
-    if retry 3 s3cmd put "${checksum_file}" "s3://${BUCKET}/${checksum_key}"; then
+    if retry 3 s3cmd put "${checksum_file}" "s3://${S3_DEST}/${checksum_key}"; then
       cleanup_backup "${checksum_file}"
     else
       s3_log "ERROR: Failed to upload checksum ${checksum_file}"

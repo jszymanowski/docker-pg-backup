@@ -28,6 +28,19 @@ notify_monitoring() {
     return 0
   fi
 
+  # HEALTHCHECKS_URL-based monitoring (e.g., https://hc-ping.com/your-uuid)
+  if [[ -n "${HEALTHCHECKS_URL:-}" ]]; then
+    if [[ "${status}" == "success" ]]; then
+      monitoring_log "notify_monitoring: pinging HEALTHCHECKS_URL"
+      curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}" > /dev/null 2>&1 || \
+        monitoring_log "notify_monitoring: failed to ping HEALTHCHECKS_URL"
+    else
+      monitoring_log "notify_monitoring: signaling failure to HEALTHCHECKS_URL"
+      curl -fsS -m 10 --retry 3 "${HEALTHCHECKS_URL}/fail" > /dev/null 2>&1 || true
+    fi
+    return 0
+  fi
+
   # Safe fallback
   monitoring_log "notify_monitoring: no monitoring configured"
   return 0

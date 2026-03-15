@@ -46,10 +46,10 @@ backup_globals() {
   set -o pipefail
 
   if [[ "${STORAGE_BACKEND}" == "S3" ]]; then
-    db_log "Backing up globals.sql to S3 bucket ${BUCKET}"
+    db_log "Backing up globals.sql to S3 bucket ${S3_DEST}"
     validate_postgres_pass
     if pg_dumpall ${PG_CONN_PARAMETERS} --globals-only \
-      | s3cmd put - "s3://${BUCKET}/globals.sql"
+      | s3cmd put - "s3://${S3_DEST}/globals.sql"
     then
       db_log "Globals backup to S3 completed successfully at $(date +%d-%B-%Y-%H-%M)"
       unset_postgres_pass

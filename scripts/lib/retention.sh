@@ -140,13 +140,13 @@ run_s3_retention() {
   : "${REMOVE_BEFORE:=0}"
   : "${CONSOLIDATE_AFTER:=0}"
 
-  retention_log "Running S3 retention on ${BUCKET}"
+  retention_log "Running S3 retention on ${S3_DEST}"
 
 
-  if s3cmd ls "s3://${BUCKET}" >/dev/null 2>&1; then
+  if s3cmd ls "s3://${S3_DEST}" >/dev/null 2>&1; then
     :
   else
-    retention_log "Bucket ${BUCKET} not accessible"
+    retention_log "Bucket ${S3_DEST} not accessible"
     return 0
   fi
 
@@ -180,7 +180,7 @@ s3_expire_objects() {
       retention_log "Deleting S3 object ${path} (expiry)"
       s3cmd del "${path}"
     fi
-  done < <(s3cmd ls "s3://${BUCKET}" --recursive || true)
+  done < <(s3cmd ls "s3://${S3_DEST}" --recursive || true)
 }
 
 ############################################
@@ -206,7 +206,7 @@ s3_consolidate_objects() {
     [[ -z "${key}" || -n "${keep_map[$key]:-}" ]] && continue
 
     keep_map["$key"]="${path}"
-  done < <(s3cmd ls "s3://${BUCKET}" --recursive | sort || true)
+  done < <(s3cmd ls "s3://${S3_DEST}" --recursive | sort || true)
 
   # Second pass: delete everything else
   while read -r _ date _ path; do
@@ -226,5 +226,5 @@ s3_consolidate_objects() {
       retention_log "Deleting S3 object ${path} (consolidation)"
       s3cmd del "${path}"
     fi
-  done < <(s3cmd ls "s3://${BUCKET}" --recursive || true)
+  done < <(s3cmd ls "s3://${S3_DEST}" --recursive || true)
 }

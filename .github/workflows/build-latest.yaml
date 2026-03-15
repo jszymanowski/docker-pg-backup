@@ -24,13 +24,13 @@ jobs:
     strategy:
       matrix:
         postgresMajorVersion:
-          - 17
+          - 18
         postgisMajorVersion:
           - 3
         postgisMinorRelease:
-          - 5
+          - 6
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -56,7 +56,7 @@ jobs:
           cache-to: type=gha,scope=test
           target: postgis-backup-test
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kartoza-pg-backup
           path: /tmp/pg-backup.tar
@@ -73,12 +73,17 @@ jobs:
     strategy:
       matrix:
         scenario:
-          - restore
-          - s3
+          - file_restore
+          - s3_upload
+          - s3_restore
+          - ownership
+          - retentions
+          - monitoring
+          - cron
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: kartoza-pg-backup
           path: /tmp
@@ -106,9 +111,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-backup-image ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: kartoza-pg-backup
           path: /tmp

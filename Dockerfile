@@ -1,16 +1,16 @@
 ##############################################################################
 # Production Stage                                                           #
 ##############################################################################
-ARG POSTGRES_MAJOR_VERSION=17
+ARG POSTGRES_MAJOR_VERSION=18
 ARG POSTGIS_MAJOR_VERSION=3
-ARG POSTGIS_MINOR_RELEASE=5
+ARG POSTGIS_MINOR_RELEASE=6
 
 FROM kartoza/postgis:$POSTGRES_MAJOR_VERSION-$POSTGIS_MAJOR_VERSION.${POSTGIS_MINOR_RELEASE} AS postgis-backup-production
 ARG POSTGRES_MAJOR_VERSION
 ARG POSTGIS_MAJOR_VERSION
 ARG POSTGIS_MINOR_RELEASE
 
-RUN apt-get -y update; apt-get -y --no-install-recommends install  cron python3-pip vim  gettext \
+RUN apt-get -y update; apt-get -y --no-install-recommends install  cron python3-pip vim  gettext jq \
     && apt-get -y --purge autoremove && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install s3cmd python-magic --break-system-packages
@@ -19,9 +19,9 @@ RUN touch /var/log/cron.log
 ENV \
     PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-ADD build_data /build_data
+
 ADD scripts /backup-scripts
-RUN echo ${POSTGRES_MAJOR_VERSION} > /tmp/pg_version.txt && chmod 0755 /backup-scripts/*.sh
+RUN echo $POSTGRES_MAJOR_VERSION > /tmp/pg_version.txt && chmod 0755 /backup-scripts/*.sh
 RUN sed -i 's/PostGIS/PgBackup/' ~/.bashrc
 
 WORKDIR /backup-scripts
